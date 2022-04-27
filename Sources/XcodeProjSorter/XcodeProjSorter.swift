@@ -42,12 +42,13 @@ extension XcodeProjSorter {
     // Project Navigator
     func sortGroups() {
         for group in project.pbxproj.groups {
-
+            // Check if the user defined specific folders instead of sorting all folders' content
             if let folders = folders {
+                // Skip the root directory
                 guard group.parent != nil else {
                     continue
                 }
-
+                // Skip if the group wasn't specified for sorting
                 if let path = group.path,
                    !folders.contains(path) {
                     continue
