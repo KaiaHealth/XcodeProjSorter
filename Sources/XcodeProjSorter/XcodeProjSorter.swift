@@ -14,16 +14,19 @@ public final class XcodeProjSorter {
     let project: XcodeProj
     let options: String.CompareOptions
     let typeSort: Bool
+    let folders: [String]?
 
     public init(
         fileAtPath: String,
         options: String.CompareOptions,
-        typeSort: Bool
+        typeSort: Bool,
+        folders: [String]? = nil
     ) throws {
         self.path = Path(fileAtPath)
         self.project = try XcodeProj(path: path)
         self.options = options
         self.typeSort = typeSort
+        self.folders = folders
     }
 
     public func sort() throws {
@@ -39,6 +42,18 @@ extension XcodeProjSorter {
     // Project Navigator
     func sortGroups() {
         for group in project.pbxproj.groups {
+
+            if let folders = folders {
+                guard group.parent != nil else {
+                    continue
+                }
+
+                if let path = group.path,
+                   !folders.contains(path) {
+                    continue
+                }
+            }
+
             group.children.sort { lhs, rhs in
                 if lhs is PBXGroup && !(rhs is PBXGroup) {
                     return !typeSort

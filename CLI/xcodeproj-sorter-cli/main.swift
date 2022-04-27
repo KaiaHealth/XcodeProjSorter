@@ -27,6 +27,9 @@ struct XcodeProjectSorterCLI: ParsableCommand {
     @Argument(help: "The absolute path for .xcodeproj file.")
     var path: String
 
+    @Option(name: .shortAndLong, help: "Comma-separated array of folder names. When provided, only the content of given folders will be sorted.")
+    var folders: String?
+
     func run() throws {
         var options: String.CompareOptions = []
         if caseInsensitive {
@@ -39,7 +42,8 @@ struct XcodeProjectSorterCLI: ParsableCommand {
         let sorter = try XcodeProjSorter(
             fileAtPath: path,
             options: options,
-            typeSort: typeSort
+            typeSort: typeSort,
+            folders: folders?.components(separatedBy: ",")
         )
         try sorter.sort()
     }
