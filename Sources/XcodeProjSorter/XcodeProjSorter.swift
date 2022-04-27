@@ -28,7 +28,6 @@ public final class XcodeProjSorter {
 
     public func sort() throws {
         sortGroups()
-        sortProjects()
         sortSourcesBuildPhase()
         sortResourcesBuildPhase()
 
@@ -57,21 +56,6 @@ extension XcodeProjSorter {
             group.children.sort { lhs, rhs in
                 let lhsName = lhs.name ?? lhs.path ?? ""
                 let rhsName = rhs.name ?? rhs.path ?? ""
-                return sortNames(lhs: lhsName, rhs: rhsName)
-            }
-        }
-    }
-
-    func sortProjects() {
-        for project in project.pbxproj.projects {
-            // Targets
-            project.targets.sort { lhs, rhs in
-                return sortNames(lhs: lhs.name, rhs: rhs.name)
-            }
-            // Swift Packages
-            project.packages.sort { lhs, rhs in
-                let lhsName = lhs.name ?? ""
-                let rhsName = rhs.name ?? ""
                 return sortNames(lhs: lhsName, rhs: rhsName)
             }
         }
