@@ -34,7 +34,7 @@ public final class XcodeProjSorter {
         sortSourcesBuildPhase()
         sortResourcesBuildPhase()
 
-        try project.write(path: path)
+        try project.writePBXProj(path: path, outputSettings: .init())
     }
 }
 
