@@ -21,6 +21,9 @@ struct XcodeProjectSorterCLI: ParsableCommand {
     @Flag(name: .shortAndLong, help: "Sort file name using numeric value, that is, 2.txt < 7.txt < 25.txt.")
     var numeric = false
 
+    @Flag(name: .shortAndLong, help: "Sort by type first. When enabled, files will be placed above folders of the same directory.")
+    var typeSort = false
+
     @Argument(help: "The absolute path for .xcodeproj file.")
     var path: String
 
@@ -33,7 +36,11 @@ struct XcodeProjectSorterCLI: ParsableCommand {
             options.insert(.numeric)
         }
 
-        let sorter = try XcodeProjSorter(fileAtPath: path, options: options)
+        let sorter = try XcodeProjSorter(
+            fileAtPath: path,
+            options: options,
+            typeSort: typeSort
+        )
         try sorter.sort()
     }
 }
