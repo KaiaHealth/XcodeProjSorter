@@ -14,19 +14,19 @@ public final class XcodeProjSorter {
     let project: XcodeProj
     let options: String.CompareOptions
     let typeSort: Bool
-    let folders: [String]?
+    let rootExcluded: Bool
 
     public init(
         fileAtPath: String,
         options: String.CompareOptions,
         typeSort: Bool,
-        folders: [String]? = nil
+        rootExcluded: Bool
     ) throws {
         self.path = Path(fileAtPath)
         self.project = try XcodeProj(path: path)
         self.options = options
         self.typeSort = typeSort
-        self.folders = folders
+        self.rootExcluded = rootExcluded
     }
 
     public func sort() throws {
@@ -42,17 +42,8 @@ extension XcodeProjSorter {
     // Project Navigator
     func sortGroups() {
         for group in project.pbxproj.groups {
-            // Check if the user defined specific folders instead of sorting all folders' content
-            if let folders = folders {
-                // Skip the root directory
-                guard group.parent != nil else {
-                    continue
-                }
-                // Skip if the group wasn't specified for sorting
-                if let path = group.path,
-                   !folders.contains(path) {
-                    continue
-                }
+            if rootExcluded && group.parent == nil {
+                continue
             }
 
             group.children.sort { lhs, rhs in

@@ -24,11 +24,11 @@ struct XcodeProjectSorterCLI: ParsableCommand {
     @Flag(name: .shortAndLong, help: "Sort by type first. When enabled, files will be placed above folders of the same directory.")
     var typeSort = false
 
+    @Flag(name: .shortAndLong, help: "Don't sort the contents of the root directory.")
+    var rootExcluded = false
+
     @Argument(help: "The absolute path for .xcodeproj file.")
     var path: String
-
-    @Option(name: .shortAndLong, help: "Comma-separated array of folder names. When provided, only the content of given folders will be sorted.")
-    var folders: String?
 
     func run() throws {
         var options: String.CompareOptions = []
@@ -43,7 +43,7 @@ struct XcodeProjectSorterCLI: ParsableCommand {
             fileAtPath: path,
             options: options,
             typeSort: typeSort,
-            folders: folders?.components(separatedBy: ",")
+            rootExcluded: rootExcluded
         )
         try sorter.sort()
     }
