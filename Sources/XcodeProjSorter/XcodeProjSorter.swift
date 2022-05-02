@@ -10,43 +10,60 @@ import PathKit
 import XcodeProj
 
 public final class XcodeProjSorter {
+    public struct SortScope {
+        let root: Bool
+        let buildPhasesSources: Bool
+        let buildPhasesResources: Bool
+
+        public init(root: Bool, buildPhasesSources: Bool, buildPhasesResources: Bool) {
+            self.root = root
+            self.buildPhasesSources = buildPhasesSources
+            self.buildPhasesResources = buildPhasesResources
+        }
+    }
+
     let path: Path
     let project: XcodeProj
     let options: String.CompareOptions
     let typeSort: Bool
-    let rootExcluded: Bool
+    let sortScope: SortScope
 
     public init(
         fileAtPath: String,
         options: String.CompareOptions,
         typeSort: Bool,
-        rootExcluded: Bool
+        sortScope: SortScope
     ) throws {
         self.path = Path(fileAtPath)
         self.project = try XcodeProj(path: path)
         self.options = options
         self.typeSort = typeSort
-        self.rootExcluded = rootExcluded
+        self.sortScope = sortScope
     }
 
     public func sort() throws {
-        sortGroups()
-        sortSourcesBuildPhase()
-        sortResourcesBuildPhase()
+        let didSortGroups = sortGroups()
+        let didSortSourcesBuildPhases = sortScope.buildPhasesSources && sortSourcesBuildPhase()
+        let didSortResourcesBuildPhases = sortScope.buildPhasesResources && sortResourcesBuildPhase()
 
-        try project.writePBXProj(path: path, outputSettings: .init())
+        if didSortGroups || didSortSourcesBuildPhases || didSortResourcesBuildPhases {
+            try project.writePBXProj(path: path, outputSettings: .init())
+        } else {
+            print("No change required in the order of project files. PBXProj file is left untouched.")
+        }
     }
 }
 
 extension XcodeProjSorter {
     // Project Navigator
-    func sortGroups() {
+    func sortGroups() -> Bool {
+        var didSortElements = false
         for group in project.pbxproj.groups {
-            if rootExcluded && group.parent == nil {
+            if !sortScope.root && group.parent == nil {
                 continue
             }
 
-            group.children.sort { lhs, rhs in
+            let elementsSorted = group.children.sorted { lhs, rhs in
                 if lhs is PBXGroup && !(rhs is PBXGroup) {
                     return !typeSort
                 } else if !(lhs is PBXGroup) && rhs is PBXGroup {
@@ -57,37 +74,66 @@ extension XcodeProjSorter {
                     return sortNames(lhs: lhsName, rhs: rhsName)
                 }
             }
+
+            if group.children != elementsSorted {
+                group.children = elementsSorted
+                didSortElements = true
+            }
         }
 
         for group in project.pbxproj.variantGroups {
-            group.children.sort { lhs, rhs in
+            let elementsSorted = group.children.sorted { lhs, rhs in
                 let lhsName = lhs.name ?? lhs.path ?? ""
                 let rhsName = rhs.name ?? rhs.path ?? ""
                 return sortNames(lhs: lhsName, rhs: rhsName)
             }
+
+            if group.children != elementsSorted {
+                group.children = elementsSorted
+                didSortElements = true
+            }
         }
+
+        return didSortElements
     }
 
     // Compile Sources Phase
-    func sortSourcesBuildPhase() {
+    func sortSourcesBuildPhase() -> Bool {
+        var didSortElements = false
         for sourceBuildPhase in project.pbxproj.sourcesBuildPhases {
-            sourceBuildPhase.files?.sort { lhs, rhs in
+            let elementsSorted = sourceBuildPhase.files?.sorted { lhs, rhs in
                 let lhsName = lhs.file?.name ?? lhs.file?.path ?? ""
                 let rhsName = rhs.file?.name ?? rhs.file?.path ?? ""
                 return sortNames(lhs: lhsName, rhs: rhsName)
             }
+
+            if sourceBuildPhase.files != elementsSorted {
+                sourceBuildPhase.files = elementsSorted
+                didSortElements = true
+            }
         }
+
+        return didSortElements
     }
 
     // Copy Bundle Resources Phase
-    func sortResourcesBuildPhase() {
+    func sortResourcesBuildPhase() -> Bool {
+        var didSortElements = false
         for resourcesBuildPhase in project.pbxproj.resourcesBuildPhases {
-            resourcesBuildPhase.files?.sort { lhs, rhs in
+            let elementsSorted = resourcesBuildPhase.files?.sorted { lhs, rhs in
                 let lhsName = lhs.file?.name ?? lhs.file?.path ?? ""
                 let rhsName = rhs.file?.name ?? rhs.file?.path ?? ""
                 return sortNames(lhs: lhsName, rhs: rhsName)
             }
+
+
+            if resourcesBuildPhase.files != elementsSorted {
+                resourcesBuildPhase.files = elementsSorted
+                didSortElements = true
+            }
         }
+
+        return didSortElements
     }
 
     func sortNames(lhs: String, rhs: String) -> Bool {
