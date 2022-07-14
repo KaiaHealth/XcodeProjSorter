@@ -26,24 +26,30 @@ Create a `Tools` directory in project root directory, and put `xcodeproj-sorter`
 Put following codes into `.git/hooks/pre-commit`.
 
 ```bash
-#!/bin/sh
+#!/bin/bash
 #
 # Following script is to sort Xcode project files, and add them back to version control.
 # The reason to sort project file is that it can reduce project.pbxproj file merging conflict possibility.
+# Source: https://github.com/KaiaHealth/XcodeProjSorter/blob/main/README.md
 #
-echo 'Sorting Xcode project files'
+
+echo "Execute pre-commit hook for sorting project files"
 
 GIT_ROOT=$(git rev-parse --show-toplevel)
-sorter="$GIT_ROOT/Tools/xcodeproj-sorter"
-modifiedProjectFiles=( $(git diff --name-only --cached | grep "project.pbxproj") )
+sorter="$GIT_ROOT/util-scripts/xcodeproj-sorter"
+modifiedProjectFiles=$(git diff --name-only --cached | grep "project.pbxproj")
 
-for filePath in ${modifiedProjectFiles[@]}; do
-  fullFilePath="$GIT_ROOT/$filePath"
-  $sorter -n $fullFilePath
-  git add $fullFilePath
+oldIFS=$IFS
+IFS=$(echo -en "\n\b")
+for filePath in $modifiedProjectFiles; do
+  pbxprojPath="$GIT_ROOT/$filePath"
+  xcodeprojPath=$(dirname "$pbxprojPath")
+  echo "Sorting for $xcodeprojPath"
+  $sorter "$xcodeprojPath" --case-insensitive --type-sort
+  git add "$xcodeprojPath"
+  echo "Done sorting for $xcodeprojPath"
 done
-
-echo 'Done sorting Xcode project files'
+IFS=$oldIFS
 
 exit 0
 ```
